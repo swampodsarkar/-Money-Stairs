@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#f8b500" />
+  <meta name="description" content="Money Stairs - Track your savings progress with motivational steps" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>💰 Money Stairs</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #000000;
+      --primary: #f8b500;
+      --primary-dark: #e0a500;
+      --secondary: #f0f0f0;
+      --success: #4caf50;
+      --success-dark: #3e8e41;
+    }
+
+    body.dark {
+      --bg: #121212;
+      --text: #ffffff;
+      --secondary: #2a2a2a;
+      --success: #388e3c;
+      --success-dark: #2e7d32;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s ease, color 0.3s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-container {
+      max-width: 100%;
+      margin: auto;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .app-header {
+      background-color: var(--primary);
+      color: #000;
+      padding: 20px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 22px;
+      position: relative;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+      background-color: var(--secondary);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .form-label {
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+
+    .step-box {
+      height: 55px;
+      margin: 8px 0;
+      background-color: var(--bg);
+      border-radius: 10px;
+      text-align: center;
+      line-height: 55px;
+      font-size: 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .step-box:active {
+      transform: scale(0.98);
+    }
+
+    .step-box.character {
+      background-color: var(--success);
+      color: white;
+      transform: scale(1.02);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .step-box.trophy {
+      background: linear-gradient(135deg, gold, #ffd700);
+      font-weight: bold;
+      color: black;
+      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+    }
+
+    .step-box.completed {
+      background-color: #a5d6a7;
+      color: #000;
+    }
+
+    .step-box::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 6px;
+      background-color: var(--primary);
+    }
+
+    .app-footer {
+      background: var(--primary);
+      padding: 12px 15px;
+      font-size: 14px;
+      text-align: center;
+      color: #000;
+      font-weight: 500;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+    }
+
+    .theme-switch {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    #loadingScreen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #000;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+      transition: opacity 0.5s;
+    }
+
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .progress-container {
+      margin: 20px 0;
+      height: 12px;
+      background-color: #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+      transition: width 0.5s ease-out;
+    }
+
+    .money-display {
+      font-size: 26px;
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+      padding: 10px;
+      background: var(--bg);
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .money-display span {
+      color: var(--primary);
+    }
+
+    .btn-warning {
+      font-weight: bold;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border: none;
+      color: #000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .btn-success {
+      font-weight: bold;
+      background: linear-gradient(135deg, var(--success), var(--success-dark));
+      border: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .btn-outline-secondary {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
+    .card {
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      background-color: var(--bg);
+    }
+
+    .form-control {
+      background-color: var(--secondary);
+      border: 1px solid rgba(0,0,0,0.1);
+      color: var(--text);
+      height: 45px;
+      border-radius: 8px;
+    }
+
+    .form-control:focus {
+      box-shadow: 0 0 0 0.25rem rgba(248, 181, 0, 0.25);
+      border-color: var(--primary);
+    }
+
+    /* Add to Home Screen Prompt */
+    .add-to-home {
+      position: fixed;
+      bottom: 70px;
+      left: 0;
+      right: 0;
+      background: var(--primary);
+      color: #000;
+      padding: 15px;
+      text-align: center;
+      z-index: 1000;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+      display: none;
+    }
+
+    .add-to-home button {
+      background: #000;
+      color: var(--primary);
+      border: none;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+
+    /* Confetti effect */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background-color: #f00;
+      opacity: 0;
+      z-index: 999;
+      animation: confetti 5s ease-in-out;
+    }
+
+    @keyframes confetti {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(1000px) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    /* Vibration effect */
+    @keyframes vibrate {
+      0% { transform: translateX(0); }
+      20% { transform: translateX(-2px); }
+      40% { transform: translateX(2px); }
+      60% { transform: translateX(-2px); }
+      80% { transform: translateX(2px); }
+      100% { transform: translateX(0); }
+    }
+
+    .vibrate {
+      animation: vibrate 0.3s linear;
+    }
+
+    /* Celebration animation */
+    .celebrate {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9998;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+
+    .celebrate.show {
+      opacity: 1;
+    }
+
+    .celebrate-text {
+      color: white;
+      font-size: 2rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 400px) {
+      .money-display {
+        font-size: 22px;
+      }
+      .step-box {
+        height: 50px;
+        line-height: 50px;
+        font-size: 16px;
+      }
+    }
+
+    /* iOS specific adjustments */
+    @supports (-webkit-touch-callout: none) {
+      .content {
+        padding-bottom: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🔄 Loading Screen -->
+  <div id="loadingScreen">
+    <div class="loading-spinner"></div>
+    <h1>Money Stairs</h1>
+    <p>Loading your savings journey...</p>
+  </div>
+
+  <!-- Celebration Screen -->
+  <div class="celebrate" id="celebrationScreen">
+    <div class="celebrate-text">🎉 Goal Achieved! 🎉</div>
+    <button class="btn btn-warning" onclick="hideCelebration()">Continue</button>
+  </div>
+
+  <!-- 📱 Main App -->
+  <div class="app-container">
+    <div class="app-header">
+      💰 Money Stairs
+      <div class="theme-switch" style="position: absolute; right: 10px; top: 20px;">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="themeToggle" onchange="toggleTheme()" />
+          <label class="form-check-label" for="themeToggle" style="color: #000;">🌓</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">Target Amount</label>
+              <input type="number" id="target" class="form-control" value="10000" inputmode="numeric" />
+            </div>
+            <div class="col-6">
+              <label class="form-label">Step Amount</label>
+              <input type="number" id="stepAmount" class="form-control" value="500" inputmode="numeric" />
+            </div>
+            <div class="col-12 d-grid">
+              <button onclick="setTarget()" class="btn btn-warning mt-2">🎯 Set Goal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-body">
+          <div class="row g-2 align-items-end">
+            <div class="col-8">
+              <label class="form-label">Add Savings</label>
+              <input type="number" id="saveInput" class="form-control" value="500" inputmode="numeric" />
+            </div>
+            <div class="col-4 d-grid">
+              <button onclick="addSavings()" class="btn btn-success">+ Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="money-display">
+        Saved: <span id="savedAmount">0</span> / <span id="goalAmount">0</span>
+      </div>
+
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <div class="d-flex flex-column-reverse" id="stepContainer">
+        <!-- Steps show here -->
+      </div>
+
+      <div class="theme-switch">
+        <button class="btn btn-sm btn-outline-secondary" onclick="resetApp()">🔄 Reset App</button>
+      </div>
+    </div>
+
+    <div class="app-footer">
+      Made with ❤️ by Mithun Kuri
+    </div>
+  </div>
+
+  <!-- Add to Home Screen Prompt -->
+  <div class="add-to-home" id="addToHome">
+    Install Money Stairs for better experience
+    <button onclick="installApp()">Install</button>
+    <button onclick="dismissPrompt()">×</button>
+  </div>
+
+  <script>
+    // PWA Installation variables
+    let deferredPrompt;
+    let showInstallPromotion = true;
+
+    // Show loader
+    window.onload = function () {
+      setTimeout(() => {
+        document.getElementById('loadingScreen').style.opacity = '0';
+        setTimeout(() => {
+          document.getElementById('loadingScreen').style.display = 'none';
+        }, 500);
+        loadFromStorage();
+        applyTheme();
+        registerServiceWorker();
+      }, 1500);
+    };
+
+    let saved = Number(localStorage.getItem("saved")) || 0;
+    let goal = Number(localStorage.getItem("goal")) || 10000;
+    let stepValue = Number(localStorage.getItem("step")) || 500;
+    let previousGoalAchieved = localStorage.getItem("goalAchieved") === "true";
+
+    const savedAmountEl = document.getElementById("savedAmount");
+    const goalAmountEl = document.getElementById("goalAmount");
+    const stepContainer = document.getElementById("stepContainer");
+    const progressBar = document.getElementById("progressBar");
+    const celebrationScreen = document.getElementById("celebrationScreen");
+
+    function setTarget() {
+      goal = Number(document.getElementById("target").value);
+      stepValue = Number(document.getElementById("stepAmount").value);
+      
+      if (goal <= 0 || stepValue <= 0) {
+        showAlert("Please enter positive values for target and step amount");
+        return;
+      }
+      
+      localStorage.setItem("goal", goal);
+      localStorage.setItem("step", stepValue);
+      previousGoalAchieved = false;
+      localStorage.setItem("goalAchieved", "false");
+      renderSteps();
+      vibrate();
+    }
+
+    function addSavings() {
+      const amount = Number(document.getElementById("saveInput").value);
+      if (amount <= 0) {
+        showAlert("Please enter a positive amount to save");
+        return;
+      }
+      
+      saved += amount;
+      localStorage.setItem("saved", saved);
+      
+      // Animation effect
+      const saveBtn = document.querySelector(".btn-success");
+      saveBtn.textContent = "✓ Added";
+      saveBtn.classList.add("btn-primary");
+      setTimeout(() => {
+        saveBtn.textContent = "+ Add";
+        saveBtn.classList.remove("btn-primary");
+      }, 1000);
+      
+      renderSteps();
+      vibrate();
+      
+      // Check if goal was just achieved
+      if (saved >= goal && !previousGoalAchieved) {
+        showCelebration();
+        previousGoalAchieved = true;
+        localStorage.setItem("goalAchieved", "true");
+      }
+    }
+
+    function renderSteps() {
+      savedAmountEl.textContent = saved.toLocaleString();
+      goalAmountEl.textContent = goal.toLocaleString();
+      
+      // Update progress bar with animation
+      const progressPercent = Math.min((saved / goal) * 100, 100);
+      progressBar.style.width = `${progressPercent}%`;
+      
+      stepContainer.innerHTML = "";
+      const totalSteps = Math.ceil(goal / stepValue);
+      const currentStep = Math.floor(saved / stepValue);
+
+      for (let i = 0; i < totalSteps; i++) {
+        const div = document.createElement("div");
+        div.classList.add("step-box");
+
+        const stepAmount = (i + 1) * stepValue;
+        const displayAmount = stepAmount > goal ? goal : stepAmount;
+        
+        if (i < currentStep) {
+          div.classList.add("completed");
+          div.innerHTML = `✓ ${displayAmount.toLocaleString()}`;
+        } else if (i === currentStep && saved < goal) {
+          div.classList.add("character");
+          div.innerHTML = `👤 ${displayAmount.toLocaleString()}`;
+        } else {
+          div.innerHTML = displayAmount.toLocaleString();
+        }
+
+        if (i === totalSteps - 1) {
+          div.classList.add("trophy");
+          if (saved >= goal) {
+            div.classList.add("character");
+            div.innerHTML = "👑 Goal Achieved!";
+          } else {
+            div.innerHTML = "🏆 Goal: " + displayAmount.toLocaleString();
+          }
+        }
+
+        // Add click event to steps
+        div.addEventListener("click", function() {
+          if (i === currentStep && saved < goal) {
+            document.getElementById("saveInput").value = stepValue;
+            document.getElementById("saveInput").focus();
+          }
+        });
+
+        stepContainer.appendChild(div);
+      }
+    }
+
+    function loadFromStorage() {
+      document.getElementById("target").value = goal;
+      document.getElementById("stepAmount").value = stepValue;
+      renderSteps();
+      
+      // Show celebration if goal was already achieved
+      if (previousGoalAchieved && saved >= goal) {
+        setTimeout(() => {
+          showCelebration();
+        }, 1000);
+      }
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("dark");
+      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
+    }
+
+    function applyTheme() {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme === "dark") {
+        document.body.classList.add("dark");
+        document.getElementById("themeToggle").checked = true;
+      }
+    }
+    
+    function resetApp() {
+      if (confirm("Are you sure you want to reset all your savings data?")) {
+        saved = 0;
+        goal = 10000;
+        stepValue = 500;
+        previousGoalAchieved = false;
+        localStorage.setItem("saved", saved);
+        localStorage.setItem("goal", goal);
+        localStorage.setItem("step", stepValue);
+        localStorage.setItem("goalAchieved", "false");
+        loadFromStorage();
+        vibrate();
+      }
+    }
+    
+    function showCelebration() {
+      celebrationScreen.classList.add("show");
+      createConfetti();
+      
+      // Play celebration sound if possible
+      if (typeof Audio !== "undefined") {
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
+          audio.volume = 0.3;
+          audio.play().catch(e => console.log("Audio play failed:", e));
+        } catch (e) {
+          console.log("Audio error:", e);
+        }
+      }
+    }
+    
+    function hideCelebration() {
+      celebrationScreen.classList.remove("show");
+    }
+    
+    function createConfetti() {
+      const colors = ['#f8b500', '#4caf50', '#2196F3', '#FF5252', '#FFEB3B'];
+      
+      for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement("div");
+        confetti.classList.add("confetti");
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = Math.random() * 10 + 5 + 'px';
+        confetti.style.height = Math.random() * 10 + 5 + 'px';
+        confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+        document.body.appendChild(confetti);
+        
+        // Remove confetti after animation
+        setTimeout(() => {
+          confetti.remove();
+        }, 5000);
+      }
+    }
+    
+    function vibrate() {
+      // Check if vibration API is supported
+      if ("vibrate" in navigator) {
+        navigator.vibrate(50);
+      } else {
+        // Fallback animation
+        document.body.classList.add("vibrate");
+        setTimeout(() => {
+          document.body.classList.remove("vibrate");
+        }, 300);
+      }
+    }
+    
+    function showAlert(message) {
+      // Simple alert replacement for better mobile UX
+      const alertDiv = document.createElement("div");
+      alertDiv.style.position = "fixed";
+      alertDiv.style.bottom = "20px";
+      alertDiv.style.left = "50%";
+      alertDiv.style.transform = "translateX(-50%)";
+      alertDiv.style.backgroundColor = "rgba(0,0,0,0.8)";
+      alertDiv.style.color = "white";
+      alertDiv.style.padding = "10px 20px";
+      alertDiv.style.borderRadius = "20px";
+      alertDiv.style.zIndex = "1000";
+      alertDiv.style.maxWidth = "80%";
+      alertDiv.style.textAlign = "center";
+      alertDiv.textContent = message;
+      document.body.appendChild(alertDiv);
+      
+      setTimeout(() => {
+        alertDiv.style.opacity = "0";
+        setTimeout(() => {
+          alertDiv.remove();
+        }, 500);
+      }, 3000);
+    }
+    
+    // PWA Installation handlers
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      deferredPrompt = e;
+      
+      // Show our custom install prompt if not dismissed before
+      if (showInstallPromotion) {
+        setTimeout(() => {
+          const addToHome = document.getElementById('addToHome');
+          addToHome.style.display = 'block';
+          setTimeout(() => {
+            addToHome.style.opacity = '1';
+          }, 10);
+        }, 5000);
+      }
+    });
+    
+    function installApp() {
+      // Hide our custom install prompt
+      const addToHome = document.getElementById('addToHome');
+      addToHome.style.opacity = '0';
+      setTimeout(() => {
+        addToHome.style.display = 'none';
+      }, 500);
+      
+      // Show the install prompt
+      deferredPrompt.prompt();
+      // Wait for the user to respond to the prompt
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+          showInstallPromotion = false;
+          localStorage.setItem('installPromptDismissed', 'true');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        deferredPrompt = null;
+      });
+    }
+    
+    function dismissPrompt() {
+      const addToHome = document.getElementById('addToHome');
+      addToHome.style.opacity = '0';
+      setTimeout(() => {
+        addToHome.style.display = 'none';
+      }, 500);
+      showInstallPromotion = false;
+      localStorage.setItem('installPromptDismissed', 'true');
+    }
+    
+    function registerServiceWorker() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then(registration => {
+          console.log('ServiceWorker registration successful');
+        }).catch(err => {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+      }
+    }
+    
+    // Check if install prompt was dismissed before
+    if (localStorage.getItem('installPromptDismissed') === 'true') {
+      showInstallPromotion = false;
+    }
+  </script>
+  
+  <!-- Service Worker (sw.js would be a separate file in production) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        const CACHE_NAME = 'money-stairs-v1';
+        const urlsToCache = [
+          '/',
+          '/index.html',
+          '/styles.css',
+          '/app.js',
+          'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css'
+        ];
+
+        self.addEventListener('install', event => {
+          event.waitUntil(
+            caches.open(CACHE_NAME)
+              .then(cache => cache.addAll(urlsToCache))
+          );
+        });
+
+        self.addEventListener('fetch', event => {
+          event.respondWith(
+            caches.match(event.request)
+              .then(response => response || fetch(event.request))
+          );
+        });
+      `;
+      
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl);
+    }
+  </script>
+  
+  <!-- Web App Manifest (would be a separate file in production) -->
+  <script>
+    const manifest = {
+      "name": "Money Stairs",
+      "short_name": "MoneyStairs",
+      "description": "Track your savings progress with motivational steps",
+      "start_url": "/",
+      "display": "standalone",
+      "background_color": "#f8b500",
+      "theme_color": "#f8b500",
+      "icons": [
+        {
+          "src": "icons/icon-72x72.png",
+          "sizes": "72x72",
+          "type": "image/png"
+        },
+        {
+          "src": "icons/icon-96x96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        },
+        {
+          "src": "icons/icon-128x128.png",
+          "sizes": "128x128",
+          "type": "image/png"
+        },
+        {
+          "src": "icons/icon-144x144.png",
+          "sizes": "144x144",
+          "type": "image/png"
+        },
+        {
+          "src": "icons/icon-152x152.png",
+          "sizes": "152x152",
+          "type": "image/png"
+        },
+        {
+          "src": "icons/icon-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        },
+        {
+          "src": "icons/icon-384x384.png",
+          "sizes": "384x384",
+          "type": "image/png"
+        },
+        {
+          "src": "icons/icon-512x512.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    };
+    
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+    document.querySelector('link[rel="manifest"]').href = manifestUrl;
+  </script>
+</body>
+</html>
