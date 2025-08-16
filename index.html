@@ -1,854 +1,1074 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <meta name="theme-color" content="#f8b500" />
-  <meta name="description" content="Money Stairs - Track your savings progress with motivational steps" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <title>💰 Money Stairs</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="manifest" href="manifest.json" />
-  <style>
-    :root {
-      --bg: #ffffff;
-      --text: #000000;
-      --primary: #f8b500;
-      --primary-dark: #e0a500;
-      --secondary: #f0f0f0;
-      --success: #4caf50;
-      --success-dark: #3e8e41;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1v1 PvP Shooter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: #0e1013;
+        }
+        canvas { display: block; }
 
-    body.dark {
-      --bg: #121212;
-      --text: #ffffff;
-      --secondary: #2a2a2a;
-      --success: #388e3c;
-      --success-dark: #2e7d32;
-    }
+        /* Lobby */
+        #lobby {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            background: radial-gradient(50% 50% at 50% 50%, rgba(30, 35, 45, 0.95) 0%, rgba(10, 12, 15, 0.98) 100%);
+        }
+        #lobby h1 {
+            margin: 0 0 24px 0;
+            font-size: 36px;
+            letter-spacing: 1px;
+        }
+        .card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 560px;
+        }
+        .row {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+        }
+        button {
+            padding: 12px 18px;
+            border: 0;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #2ea043, #1f6feb);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button[disabled] {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .subtle {
+            color: #c9d1d9;
+            opacity: 0.8;
+            font-size: 14px;
+            margin-top: 8px;
+        }
 
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      transition: background 0.3s ease, color 0.3s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
+        /* In-game UI */
+        #hud {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            color: white;
+            display: none;
+            pointer-events: none;
+        }
+        #hud .stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .health {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bar {
+            position: relative;
+            width: 220px;
+            height: 16px;
+            border-radius: 10px;
+            background: rgba(255, 0, 0, 0.35);
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .bar > .fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #3fb950, #2ea043);
+            transition: width 0.2s ease;
+        }
+        #enemy-health {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: none;
+        }
 
-    .app-container {
-      max-width: 100%;
-      margin: auto;
-      background: var(--bg);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
+        /* Center overlays */
+        #center-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+        .overlay-card {
+            background: rgba(0,0,0,0.6);
+            padding: 20px 28px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+            min-width: 320px;
+        }
+        .title {
+            font-size: 28px;
+            margin: 0 0 8px 0;
+        }
+        .subtitle {
+            opacity: 0.8;
+            margin-bottom: 16px;
+        }
+        .actions {
+            margin-top: 12px;
+        }
+        .actions button {
+            background: linear-gradient(135deg, #f85149, #da3633);
+        }
 
-    .app-header {
-      background-color: var(--primary);
-      color: #000;
-      padding: 20px;
-      text-align: center;
-      font-weight: bold;
-      font-size: 22px;
-      position: relative;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 15px;
-      background-color: var(--secondary);
-      -webkit-overflow-scrolling: touch;
-    }
-
-    .form-label {
-      font-weight: 500;
-      margin-bottom: 5px;
-    }
-
-    .step-box {
-      height: 55px;
-      margin: 8px 0;
-      background-color: var(--bg);
-      border-radius: 10px;
-      text-align: center;
-      line-height: 55px;
-      font-size: 18px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(0,0,0,0.05);
-    }
-
-    .step-box:active {
-      transform: scale(0.98);
-    }
-
-    .step-box.character {
-      background-color: var(--success);
-      color: white;
-      transform: scale(1.02);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-
-    .step-box.trophy {
-      background: linear-gradient(135deg, gold, #ffd700);
-      font-weight: bold;
-      color: black;
-      box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-    }
-
-    .step-box.completed {
-      background-color: #a5d6a7;
-      color: #000;
-    }
-
-    .step-box::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      height: 100%;
-      width: 6px;
-      background-color: var(--primary);
-    }
-
-    .app-footer {
-      background: var(--primary);
-      padding: 12px 15px;
-      font-size: 14px;
-      text-align: center;
-      color: #000;
-      font-weight: 500;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-    }
-
-    .theme-switch {
-      text-align: center;
-      margin: 20px 0;
-    }
-
-    #loadingScreen {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: #000;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      z-index: 9999;
-      transition: opacity 0.5s;
-    }
-
-    .loading-spinner {
-      width: 50px;
-      height: 50px;
-      border: 5px solid #f3f3f3;
-      border-top: 5px solid var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    input[type=number]::-webkit-inner-spin-button,
-    input[type=number]::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-
-    .progress-container {
-      margin: 20px 0;
-      height: 12px;
-      background-color: #e0e0e0;
-      border-radius: 6px;
-      overflow: hidden;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
-      transition: width 0.5s ease-out;
-    }
-
-    .money-display {
-      font-size: 26px;
-      font-weight: bold;
-      text-align: center;
-      margin: 20px 0;
-      padding: 10px;
-      background: var(--bg);
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .money-display span {
-      color: var(--primary);
-    }
-
-    .btn-warning {
-      font-weight: bold;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      border: none;
-      color: #000;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .btn-success {
-      font-weight: bold;
-      background: linear-gradient(135deg, var(--success), var(--success-dark));
-      border: none;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-
-    .btn-outline-secondary {
-      border-color: var(--text);
-      color: var(--text);
-    }
-
-    .card {
-      border: none;
-      border-radius: 12px;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-      background-color: var(--bg);
-    }
-
-    .form-control {
-      background-color: var(--secondary);
-      border: 1px solid rgba(0,0,0,0.1);
-      color: var(--text);
-      height: 45px;
-      border-radius: 8px;
-    }
-
-    .form-control:focus {
-      box-shadow: 0 0 0 0.25rem rgba(248, 181, 0, 0.25);
-      border-color: var(--primary);
-    }
-
-    /* Add to Home Screen Prompt */
-    .add-to-home {
-      position: fixed;
-      bottom: 70px;
-      left: 0;
-      right: 0;
-      background: var(--primary);
-      color: #000;
-      padding: 15px;
-      text-align: center;
-      z-index: 1000;
-      box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
-      display: none;
-    }
-
-    .add-to-home button {
-      background: #000;
-      color: var(--primary);
-      border: none;
-      padding: 5px 15px;
-      border-radius: 20px;
-      font-weight: bold;
-      margin-left: 10px;
-    }
-
-    /* Confetti effect */
-    .confetti {
-      position: fixed;
-      width: 10px;
-      height: 10px;
-      background-color: #f00;
-      opacity: 0;
-      z-index: 999;
-      animation: confetti 5s ease-in-out;
-    }
-
-    @keyframes confetti {
-      0% {
-        transform: translateY(0) rotate(0deg);
-        opacity: 1;
-      }
-      100% {
-        transform: translateY(1000px) rotate(720deg);
-        opacity: 0;
-      }
-    }
-
-    /* Vibration effect */
-    @keyframes vibrate {
-      0% { transform: translateX(0); }
-      20% { transform: translateX(-2px); }
-      40% { transform: translateX(2px); }
-      60% { transform: translateX(-2px); }
-      80% { transform: translateX(2px); }
-      100% { transform: translateX(0); }
-    }
-
-    .vibrate {
-      animation: vibrate 0.3s linear;
-    }
-
-    /* Celebration animation */
-    .celebrate {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 9998;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.5s;
-    }
-
-    .celebrate.show {
-      opacity: 1;
-    }
-
-    .celebrate-text {
-      color: white;
-      font-size: 2rem;
-      font-weight: bold;
-      text-align: center;
-      margin-bottom: 20px;
-      text-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 400px) {
-      .money-display {
-        font-size: 22px;
-      }
-      .step-box {
-        height: 50px;
-        line-height: 50px;
-        font-size: 16px;
-      }
-    }
-
-    /* iOS specific adjustments */
-    @supports (-webkit-touch-callout: none) {
-      .content {
-        padding-bottom: 30px;
-      }
-    }
-  </style>
+        /* Crosshair */
+        #crosshair {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 14px;
+            height: 14px;
+            margin-left: -7px;
+            margin-top: -7px;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(255,255,255,0.7);
+            display: none;
+        }
+    </style>
 </head>
 <body>
-
-  <!-- 🔄 Loading Screen -->
-  <div id="loadingScreen">
-    <div class="loading-spinner"></div>
-    <h1>Money Stairs</h1>
-    <p>Loading your savings journey...</p>
-  </div>
-
-  <!-- Celebration Screen -->
-  <div class="celebrate" id="celebrationScreen">
-    <div class="celebrate-text">🎉 Goal Achieved! 🎉</div>
-    <button class="btn btn-warning" onclick="hideCelebration()">Continue</button>
-  </div>
-
-  <!-- 📱 Main App -->
-  <div class="app-container">
-    <div class="app-header">
-      💰 Money Stairs
-      <div class="theme-switch" style="position: absolute; right: 10px; top: 20px;">
-        <div class="form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="themeToggle" onchange="toggleTheme()" />
-          <label class="form-check-label" for="themeToggle" style="color: #000;">🌓</label>
+    <div id="lobby">
+        <h1>Multiplayer 1v1 Arena</h1>
+        <div class="card">
+            <div><strong>Welcome!</strong> Enter a name and find a 1v1 PvP match.</div>
+            <div class="row">
+                <input type="text" id="username" placeholder="Enter username" maxlength="16">
+                <button id="loginBtn">Login</button>
+            </div>
+            <div class="row">
+                <button id="findMatchBtn" disabled>Find 1v1 Match</button>
+                <button id="leaveQueueBtn" disabled>Leave Queue</button>
+            </div>
+            <div class="subtle" id="matchStatus">Not logged in</div>
         </div>
-      </div>
     </div>
 
-    <div class="content">
-      <div class="card mb-3">
-        <div class="card-body">
-          <div class="row g-2">
-            <div class="col-6">
-              <label class="form-label">Target Amount</label>
-              <input type="number" id="target" class="form-control" value="10000" inputmode="numeric" />
+    <div id="hud">
+        <div class="stats">
+            <div class="health">
+                <span>Health</span>
+                <div class="bar" title="Your Health">
+                    <div id="hpFill" class="fill" style="width: 100%"></div>
+                </div>
+                <span id="hpText">100</span>
             </div>
-            <div class="col-6">
-              <label class="form-label">Step Amount</label>
-              <input type="number" id="stepAmount" class="form-control" value="500" inputmode="numeric" />
+            <div id="enemy-health" class="health">
+                <span>Enemy</span>
+                <div class="bar" title="Enemy Health">
+                    <div id="enemyHpFill" class="fill" style="width: 100%"></div>
+                </div>
+                <span id="enemyHpText">100</span>
             </div>
-            <div class="col-12 d-grid">
-              <button onclick="setTarget()" class="btn btn-warning mt-2">🎯 Set Goal</button>
-            </div>
-          </div>
         </div>
-      </div>
-
-      <div class="card mb-3">
-        <div class="card-body">
-          <div class="row g-2 align-items-end">
-            <div class="col-8">
-              <label class="form-label">Add Savings</label>
-              <input type="number" id="saveInput" class="form-control" value="500" inputmode="numeric" />
-            </div>
-            <div class="col-4 d-grid">
-              <button onclick="addSavings()" class="btn btn-success">+ Add</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="money-display">
-        Saved: <span id="savedAmount">0</span> / <span id="goalAmount">0</span>
-      </div>
-
-      <div class="progress-container">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-
-      <div class="d-flex flex-column-reverse" id="stepContainer">
-        <!-- Steps show here -->
-      </div>
-
-      <div class="theme-switch">
-        <button class="btn btn-sm btn-outline-secondary" onclick="resetApp()">🔄 Reset App</button>
-      </div>
     </div>
 
-    <div class="app-footer">
-      Made with ❤️ by Mithun Kuri
+    <div id="center-overlay">
+        <div class="overlay-card">
+            <div class="title" id="overlayTitle">Matchmaking…</div>
+            <div class="subtitle" id="overlaySubtitle">Please wait</div>
+            <div class="actions" id="overlayActions" style="display:none;">
+                <button id="playAgainBtn">Play Again</button>
+                <button id="backToLobbyBtn">Back to Lobby</button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <!-- Add to Home Screen Prompt -->
-  <div class="add-to-home" id="addToHome">
-    Install Money Stairs for better experience
-    <button onclick="installApp()">Install</button>
-    <button onclick="dismissPrompt()">×</button>
-  </div>
+    <div id="crosshair"></div>
 
-  <script>
-    // PWA Installation variables
-    let deferredPrompt;
-    let showInstallPromotion = true;
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
-    // Show loader
-    window.onload = function () {
-      setTimeout(() => {
-        document.getElementById('loadingScreen').style.opacity = '0';
-        setTimeout(() => {
-          document.getElementById('loadingScreen').style.display = 'none';
-        }, 500);
-        loadFromStorage();
-        applyTheme();
-        registerServiceWorker();
-      }, 1500);
-    };
+    <script>
+        // =============================================
+        // FIREBASE CONFIGURATION (provided)
+        // =============================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjMuTTJtsvr5i9xAqzQuULciJrEkUCtgg",
+            authDomain: "sheba-khujun.firebaseapp.com",
+            databaseURL: "https://sheba-khujun-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "sheba-khujun",
+            storageBucket: "sheba-khujun.appspot.com",
+            messagingSenderId: "596961253953",
+            appId: "1:596961253953:web:370090c78cca43cdc9c4c0",
+            measurementId: "G-KTFBTHVRXG"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-    let saved = Number(localStorage.getItem("saved")) || 0;
-    let goal = Number(localStorage.getItem("goal")) || 10000;
-    let stepValue = Number(localStorage.getItem("step")) || 500;
-    let previousGoalAchieved = localStorage.getItem("goalAchieved") === "true";
+        // =============================================
+        // GAME CONSTANTS
+        // =============================================
+        const PLAYER_SPEED = 9;               // faster, arcade feel
+        const BULLET_SPEED = 30;
+        const BULLET_LIFETIME = 2000;
+        const WORLD_BOUNDS = 50;
+        const PLAYER_HEALTH = 100;
+        const DAMAGE_PER_HIT = 14;
+        const MEDKIT_HEAL = 30;
+        const MEDKIT_COUNT = 5;
+        const COUNTDOWN_MS = 3000;
 
-    const savedAmountEl = document.getElementById("savedAmount");
-    const goalAmountEl = document.getElementById("goalAmount");
-    const stepContainer = document.getElementById("stepContainer");
-    const progressBar = document.getElementById("progressBar");
-    const celebrationScreen = document.getElementById("celebrationScreen");
-
-    function setTarget() {
-      goal = Number(document.getElementById("target").value);
-      stepValue = Number(document.getElementById("stepAmount").value);
-      
-      if (goal <= 0 || stepValue <= 0) {
-        showAlert("Please enter positive values for target and step amount");
-        return;
-      }
-      
-      localStorage.setItem("goal", goal);
-      localStorage.setItem("step", stepValue);
-      previousGoalAchieved = false;
-      localStorage.setItem("goalAchieved", "false");
-      renderSteps();
-      vibrate();
-    }
-
-    function addSavings() {
-      const amount = Number(document.getElementById("saveInput").value);
-      if (amount <= 0) {
-        showAlert("Please enter a positive amount to save");
-        return;
-      }
-      
-      saved += amount;
-      localStorage.setItem("saved", saved);
-      
-      // Animation effect
-      const saveBtn = document.querySelector(".btn-success");
-      saveBtn.textContent = "✓ Added";
-      saveBtn.classList.add("btn-primary");
-      setTimeout(() => {
-        saveBtn.textContent = "+ Add";
-        saveBtn.classList.remove("btn-primary");
-      }, 1000);
-      
-      renderSteps();
-      vibrate();
-      
-      // Check if goal was just achieved
-      if (saved >= goal && !previousGoalAchieved) {
-        showCelebration();
-        previousGoalAchieved = true;
-        localStorage.setItem("goalAchieved", "true");
-      }
-    }
-
-    function renderSteps() {
-      savedAmountEl.textContent = saved.toLocaleString();
-      goalAmountEl.textContent = goal.toLocaleString();
-      
-      // Update progress bar with animation
-      const progressPercent = Math.min((saved / goal) * 100, 100);
-      progressBar.style.width = `${progressPercent}%`;
-      
-      stepContainer.innerHTML = "";
-      const totalSteps = Math.ceil(goal / stepValue);
-      const currentStep = Math.floor(saved / stepValue);
-
-      for (let i = 0; i < totalSteps; i++) {
-        const div = document.createElement("div");
-        div.classList.add("step-box");
-
-        const stepAmount = (i + 1) * stepValue;
-        const displayAmount = stepAmount > goal ? goal : stepAmount;
-        
-        if (i < currentStep) {
-          div.classList.add("completed");
-          div.innerHTML = `✓ ${displayAmount.toLocaleString()}`;
-        } else if (i === currentStep && saved < goal) {
-          div.classList.add("character");
-          div.innerHTML = `👤 ${displayAmount.toLocaleString()}`;
-        } else {
-          div.innerHTML = displayAmount.toLocaleString();
-        }
-
-        if (i === totalSteps - 1) {
-          div.classList.add("trophy");
-          if (saved >= goal) {
-            div.classList.add("character");
-            div.innerHTML = "👑 Goal Achieved!";
-          } else {
-            div.innerHTML = "🏆 Goal: " + displayAmount.toLocaleString();
-          }
-        }
-
-        // Add click event to steps
-        div.addEventListener("click", function() {
-          if (i === currentStep && saved < goal) {
-            document.getElementById("saveInput").value = stepValue;
-            document.getElementById("saveInput").focus();
-          }
-        });
-
-        stepContainer.appendChild(div);
-      }
-    }
-
-    function loadFromStorage() {
-      document.getElementById("target").value = goal;
-      document.getElementById("stepAmount").value = stepValue;
-      renderSteps();
-      
-      // Show celebration if goal was already achieved
-      if (previousGoalAchieved && saved >= goal) {
-        setTimeout(() => {
-          showCelebration();
-        }, 1000);
-      }
-    }
-
-    function toggleTheme() {
-      document.body.classList.toggle("dark");
-      localStorage.setItem("theme", document.body.classList.contains("dark") ? "dark" : "light");
-    }
-
-    function applyTheme() {
-      const savedTheme = localStorage.getItem("theme");
-      if (savedTheme === "dark") {
-        document.body.classList.add("dark");
-        document.getElementById("themeToggle").checked = true;
-      }
-    }
-    
-    function resetApp() {
-      if (confirm("Are you sure you want to reset all your savings data?")) {
-        saved = 0;
-        goal = 10000;
-        stepValue = 500;
-        previousGoalAchieved = false;
-        localStorage.setItem("saved", saved);
-        localStorage.setItem("goal", goal);
-        localStorage.setItem("step", stepValue);
-        localStorage.setItem("goalAchieved", "false");
-        loadFromStorage();
-        vibrate();
-      }
-    }
-    
-    function showCelebration() {
-      celebrationScreen.classList.add("show");
-      createConfetti();
-      
-      // Play celebration sound if possible
-      if (typeof Audio !== "undefined") {
-        try {
-          const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU...');
-          audio.volume = 0.3;
-          audio.play().catch(e => console.log("Audio play failed:", e));
-        } catch (e) {
-          console.log("Audio error:", e);
-        }
-      }
-    }
-    
-    function hideCelebration() {
-      celebrationScreen.classList.remove("show");
-    }
-    
-    function createConfetti() {
-      const colors = ['#f8b500', '#4caf50', '#2196F3', '#FF5252', '#FFEB3B'];
-      
-      for (let i = 0; i < 100; i++) {
-        const confetti = document.createElement("div");
-        confetti.classList.add("confetti");
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.width = Math.random() * 10 + 5 + 'px';
-        confetti.style.height = Math.random() * 10 + 5 + 'px';
-        confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
-        document.body.appendChild(confetti);
-        
-        // Remove confetti after animation
-        setTimeout(() => {
-          confetti.remove();
-        }, 5000);
-      }
-    }
-    
-    function vibrate() {
-      // Check if vibration API is supported
-      if ("vibrate" in navigator) {
-        navigator.vibrate(50);
-      } else {
-        // Fallback animation
-        document.body.classList.add("vibrate");
-        setTimeout(() => {
-          document.body.classList.remove("vibrate");
-        }, 300);
-      }
-    }
-    
-    function showAlert(message) {
-      // Simple alert replacement for better mobile UX
-      const alertDiv = document.createElement("div");
-      alertDiv.style.position = "fixed";
-      alertDiv.style.bottom = "20px";
-      alertDiv.style.left = "50%";
-      alertDiv.style.transform = "translateX(-50%)";
-      alertDiv.style.backgroundColor = "rgba(0,0,0,0.8)";
-      alertDiv.style.color = "white";
-      alertDiv.style.padding = "10px 20px";
-      alertDiv.style.borderRadius = "20px";
-      alertDiv.style.zIndex = "1000";
-      alertDiv.style.maxWidth = "80%";
-      alertDiv.style.textAlign = "center";
-      alertDiv.textContent = message;
-      document.body.appendChild(alertDiv);
-      
-      setTimeout(() => {
-        alertDiv.style.opacity = "0";
-        setTimeout(() => {
-          alertDiv.remove();
-        }, 500);
-      }, 3000);
-    }
-    
-    // PWA Installation handlers
-    window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
-      // Stash the event so it can be triggered later.
-      deferredPrompt = e;
-      
-      // Show our custom install prompt if not dismissed before
-      if (showInstallPromotion) {
-        setTimeout(() => {
-          const addToHome = document.getElementById('addToHome');
-          addToHome.style.display = 'block';
-          setTimeout(() => {
-            addToHome.style.opacity = '1';
-          }, 10);
-        }, 5000);
-      }
-    });
-    
-    function installApp() {
-      // Hide our custom install prompt
-      const addToHome = document.getElementById('addToHome');
-      addToHome.style.opacity = '0';
-      setTimeout(() => {
-        addToHome.style.display = 'none';
-      }, 500);
-      
-      // Show the install prompt
-      deferredPrompt.prompt();
-      // Wait for the user to respond to the prompt
-      deferredPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          console.log('User accepted the install prompt');
-          showInstallPromotion = false;
-          localStorage.setItem('installPromptDismissed', 'true');
-        } else {
-          console.log('User dismissed the install prompt');
-        }
-        deferredPrompt = null;
-      });
-    }
-    
-    function dismissPrompt() {
-      const addToHome = document.getElementById('addToHome');
-      addToHome.style.opacity = '0';
-      setTimeout(() => {
-        addToHome.style.display = 'none';
-      }, 500);
-      showInstallPromotion = false;
-      localStorage.setItem('installPromptDismissed', 'true');
-    }
-    
-    function registerServiceWorker() {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').then(registration => {
-          console.log('ServiceWorker registration successful');
-        }).catch(err => {
-          console.log('ServiceWorker registration failed: ', err);
-        });
-      }
-    }
-    
-    // Check if install prompt was dismissed before
-    if (localStorage.getItem('installPromptDismissed') === 'true') {
-      showInstallPromotion = false;
-    }
-  </script>
-  
-  <!-- Service Worker (sw.js would be a separate file in production) -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        const CACHE_NAME = 'money-stairs-v1';
-        const urlsToCache = [
-          '/',
-          '/index.html',
-          '/styles.css',
-          '/app.js',
-          'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css'
+        const MAP_OBSTACLES = [
+            { x: 10, z: 10, width: 5, depth: 5 },
+            { x: -15, z: -10, width: 8, depth: 3 },
+            { x: 20, z: -15, width: 4, depth: 10 },
+            { x: -20, z: 15, width: 6, depth: 6 }
         ];
 
-        self.addEventListener('install', event => {
-          event.waitUntil(
-            caches.open(CACHE_NAME)
-              .then(cache => cache.addAll(urlsToCache))
-          );
+        // =============================================
+        // UI ELEMENTS
+        // =============================================
+        const lobbyEl = document.getElementById('lobby');
+        const loginBtn = document.getElementById('loginBtn');
+        const findMatchBtn = document.getElementById('findMatchBtn');
+        const leaveQueueBtn = document.getElementById('leaveQueueBtn');
+        const usernameInput = document.getElementById('username');
+        const matchStatusEl = document.getElementById('matchStatus');
+
+        const hudEl = document.getElementById('hud');
+        const hpFillEl = document.getElementById('hpFill');
+        const hpTextEl = document.getElementById('hpText');
+        const enemyHpSection = document.getElementById('enemy-health');
+        const enemyHpFillEl = document.getElementById('enemyHpFill');
+        const enemyHpTextEl = document.getElementById('enemyHpText');
+
+        const overlayEl = document.getElementById('center-overlay');
+        const overlayTitleEl = document.getElementById('overlayTitle');
+        const overlaySubtitleEl = document.getElementById('overlaySubtitle');
+        const overlayActionsEl = document.getElementById('overlayActions');
+        const playAgainBtn = document.getElementById('playAgainBtn');
+        const backToLobbyBtn = document.getElementById('backToLobbyBtn');
+
+        const crosshairEl = document.getElementById('crosshair');
+
+        // =============================================
+        // GAME STATE
+        // =============================================
+        const gameState = {
+            username: null,
+            playerId: null,
+            localPlayer: null,
+            players: {},
+            bullets: {},
+            medkits: {},
+            obstacles: [],
+            lastUpdateTime: Date.now(),
+            matchId: null,
+            isHost: false,
+            matchStarted: false,
+            inQueue: false,
+            cleanupFns: []
+        };
+
+        // =============================================
+        // THREE.JS SETUP
+        // =============================================
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x78a8d8);
+
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 28, 0);
+        camera.rotation.x = -Math.PI / 2;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.body.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(1, 2, 1);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        // Raycasting helpers
+        const raycaster = new THREE.Raycaster();
+        const mouseNdc = new THREE.Vector2();
+        let groundMesh = null;
+
+        // =============================================
+        // WORLD SETUP
+        // =============================================
+        function setupWorld() {
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(120, 120, 1, 1);
+            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x3a5f0b, side: THREE.DoubleSide });
+            groundMesh = new THREE.Mesh(groundGeometry, groundMaterial);
+            groundMesh.rotation.x = Math.PI / 2;
+            groundMesh.receiveShadow = true;
+            scene.add(groundMesh);
+
+            // Bounds frame
+            const boundsGeometry = new THREE.BoxGeometry(WORLD_BOUNDS * 2, 4, WORLD_BOUNDS * 2);
+            const boundsEdges = new THREE.EdgesGeometry(boundsGeometry);
+            const bounds = new THREE.LineSegments(boundsEdges, new THREE.LineBasicMaterial({ color: 0x000000 }));
+            bounds.position.y = 2;
+            scene.add(bounds);
+
+            // Obstacles
+            MAP_OBSTACLES.forEach((o, idx) => {
+                const geometry = new THREE.BoxGeometry(o.width, 2, o.depth);
+                const material = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(o.x, 1, o.z);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+                gameState.obstacles.push({ id: `obs-${idx}`, x: o.x, z: o.z, width: o.width, depth: o.depth, mesh });
+            });
+        }
+
+        // =============================================
+        // PLAYER CLASS
+        // =============================================
+        class Player {
+            constructor(id, username, isLocal = false, x = 0, z = 0, health = PLAYER_HEALTH) {
+                this.id = id;
+                this.username = username;
+                this.isLocal = isLocal;
+                this.position = new THREE.Vector3(x, 0, z);
+                this.rotation = 0;
+                this.velocity = new THREE.Vector3();
+                this.health = health;
+                this.isDead = false;
+
+                this.mesh = new THREE.Group();
+
+                const color = isLocal ? 0x00ccff : 0xff5555;
+                const bodyGeometry = new THREE.CylinderGeometry(0.6, 0.6, 1.6, 10);
+                const bodyMaterial = new THREE.MeshStandardMaterial({ color });
+                this.body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                this.body.position.y = 0.8;
+                this.body.castShadow = true;
+                this.mesh.add(this.body);
+
+                const gunGeometry = new THREE.BoxGeometry(1.1, 0.2, 0.2);
+                const gunMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                this.gun = new THREE.Mesh(gunGeometry, gunMaterial);
+                this.gun.position.set(0.9, 0.8, 0);
+                this.gun.castShadow = true;
+                this.mesh.add(this.gun);
+
+                // Name tag
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.font = '28px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.fillText(username, canvas.width / 2, canvas.height / 2 + 10);
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+                this.nameTag = new THREE.Sprite(spriteMaterial);
+                this.nameTag.position.set(0, 2.2, 0);
+                this.nameTag.scale.set(2.4, 1.2, 1);
+                this.mesh.add(this.nameTag);
+
+                scene.add(this.mesh);
+
+                if (isLocal) {
+                    this.setupControls();
+                    updateHealthUI();
+                }
+            }
+
+            setupControls() {
+                document.addEventListener('mousemove', onMouseMoveAiming);
+                document.addEventListener('click', () => {
+                    if (!this.isLocal || !gameState.matchStarted || this.isDead) return;
+                    this.shoot();
+                });
+            }
+
+            update(deltaTime) {
+                if (this.isDead) return;
+
+                this.position.add(this.velocity.clone().multiplyScalar(deltaTime));
+
+                const playerRadius = 0.6;
+                for (const obstacle of gameState.obstacles) {
+                    if (checkCollision(
+                        this.position.x, this.position.z, playerRadius,
+                        obstacle.x, obstacle.z, obstacle.width / 2, obstacle.depth / 2
+                    )) {
+                        this.position.sub(this.velocity.clone().multiplyScalar(deltaTime));
+                        break;
+                    }
+                }
+
+                this.position.x = THREE.MathUtils.clamp(this.position.x, -WORLD_BOUNDS, WORLD_BOUNDS);
+                this.position.z = THREE.MathUtils.clamp(this.position.z, -WORLD_BOUNDS, WORLD_BOUNDS);
+
+                this.mesh.position.copy(this.position);
+                this.mesh.rotation.y = this.rotation;
+
+                this.velocity.set(0, 0, 0);
+
+                if (this.isLocal) {
+                    // Medkit pickup
+                    for (const [medkitId, medkit] of Object.entries(gameState.medkits)) {
+                        const d = this.position.distanceTo(new THREE.Vector3(medkit.x, 0, medkit.z));
+                        if (d < 1.4 && this.health < PLAYER_HEALTH) {
+                            this.heal(MEDKIT_HEAL);
+                            const mRef = database.ref(`matches/${gameState.matchId}/medkits/${medkitId}`);
+                            mRef.remove();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            shoot() {
+                if (!gameState.matchId) return;
+                const bulletId = `b-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                const dir = new THREE.Vector3(Math.sin(this.rotation), 0, Math.cos(this.rotation));
+                const startPos = this.position.clone().add(new THREE.Vector3(1.2 * dir.x, 0.8, 1.2 * dir.z));
+
+                const bRef = database.ref(`matches/${gameState.matchId}/bullets/${bulletId}`);
+                bRef.set({
+                    id: bulletId,
+                    x: startPos.x,
+                    y: startPos.y,
+                    z: startPos.z,
+                    dirX: dir.x,
+                    dirZ: dir.z,
+                    owner: this.id,
+                    spawnTime: Date.now()
+                });
+            }
+
+            takeDamage(amount) {
+                if (this.isDead) return;
+                this.health -= amount;
+                if (this.health <= 0) {
+                    this.health = 0;
+                    this.isDead = true;
+                    this.body.material.color.setHex(0x777777);
+                    if (this.isLocal) {
+                        onLocalDeath();
+                    }
+                }
+                if (this.isLocal) updateHealthUI();
+                updateLocalPlayerInDb();
+            }
+
+            heal(amount) {
+                this.health = Math.min(PLAYER_HEALTH, this.health + amount);
+                if (this.isLocal) updateHealthUI();
+                updateLocalPlayerInDb();
+            }
+
+            destroy() {
+                scene.remove(this.mesh);
+            }
+        }
+
+        // =============================================
+        // BULLET CLASS
+        // =============================================
+        class Bullet {
+            constructor(id, x, y, z, dirX, dirZ, owner) {
+                this.id = id;
+                this.owner = owner;
+                this.direction = new THREE.Vector3(dirX, 0, dirZ);
+                this.spawnTime = Date.now();
+                this.mesh = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.12, 10, 10),
+                    new THREE.MeshStandardMaterial({ color: 0xffff55 })
+                );
+                this.mesh.position.set(x, y, z);
+                this.mesh.castShadow = true;
+                scene.add(this.mesh);
+            }
+
+            update(deltaTime) {
+                this.mesh.position.add(this.direction.clone().multiplyScalar(BULLET_SPEED * deltaTime));
+
+                if (Math.abs(this.mesh.position.x) > WORLD_BOUNDS || Math.abs(this.mesh.position.z) > WORLD_BOUNDS) {
+                    this.destroy();
+                    return false;
+                }
+                for (const obstacle of gameState.obstacles) {
+                    if (checkCollision(this.mesh.position.x, this.mesh.position.z, 0.12, obstacle.x, obstacle.z, obstacle.width / 2, obstacle.depth / 2)) {
+                        this.destroy();
+                        return false;
+                    }
+                }
+                for (const [pid, player] of Object.entries(gameState.players)) {
+                    if (pid !== this.owner && !player.isDead) {
+                        const d = this.mesh.position.distanceTo(player.position);
+                        if (d < 0.7) {
+                            player.takeDamage(DAMAGE_PER_HIT);
+                            this.destroy();
+                            return false;
+                        }
+                    }
+                }
+                if (gameState.localPlayer && this.owner !== gameState.localPlayer.id && !gameState.localPlayer.isDead) {
+                    const d = this.mesh.position.distanceTo(gameState.localPlayer.position);
+                    if (d < 0.7) {
+                        gameState.localPlayer.takeDamage(DAMAGE_PER_HIT);
+                        this.destroy();
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            destroy() {
+                scene.remove(this.mesh);
+                if (gameState.matchId) {
+                    database.ref(`matches/${gameState.matchId}/bullets/${this.id}`).remove();
+                }
+            }
+        }
+
+        // =============================================
+        // HELPERS
+        // =============================================
+        function checkCollision(x1, z1, radius1, x2, z2, halfWidth, halfDepth) {
+            const dx = Math.abs(x1 - x2);
+            const dz = Math.abs(z1 - z2);
+            if (dx > halfWidth + radius1) return false;
+            if (dz > halfDepth + radius1) return false;
+            if (dx <= halfWidth) return true;
+            if (dz <= halfDepth) return true;
+            const cornerDistSq = Math.pow(dx - halfWidth, 2) + Math.pow(dz - halfDepth, 2);
+            return cornerDistSq <= Math.pow(radius1, 2);
+        }
+
+        function updateHealthUI() {
+            if (!gameState.localPlayer) return;
+            const hp = gameState.localPlayer.health;
+            hpTextEl.textContent = hp;
+            hpFillEl.style.width = `${hp}%`;
+        }
+
+        function updateEnemyHealthUI() {
+            const enemy = Object.values(gameState.players).find(p => p.id !== gameState.playerId);
+            if (!enemy) {
+                enemyHpSection.style.display = 'none';
+                return;
+            }
+            enemyHpSection.style.display = 'flex';
+            enemyHpTextEl.textContent = enemy.health;
+            enemyHpFillEl.style.width = `${enemy.health}%`;
+        }
+
+        function updateLocalPlayerInDb() {
+            if (!gameState.matchId || !gameState.localPlayer) return;
+            database.ref(`matches/${gameState.matchId}/players/${gameState.localPlayer.id}`).update({
+                x: gameState.localPlayer.position.x,
+                z: gameState.localPlayer.position.z,
+                rotation: gameState.localPlayer.rotation,
+                health: gameState.localPlayer.health,
+                isDead: gameState.localPlayer.isDead,
+                lastUpdate: Date.now()
+            });
+        }
+
+        function onLocalDeath() {
+            showOverlay('You Died', 'Waiting for result…');
+            // If enemy still alive, they are the winner; host will set outcome
+        }
+
+        function onMouseMoveAiming(e) {
+            if (!gameState.localPlayer || !gameState.matchStarted) return;
+            mouseNdc.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseNdc.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouseNdc, camera);
+            const intersects = raycaster.intersectObject(groundMesh, false);
+            if (intersects && intersects.length > 0) {
+                const point = intersects[0].point;
+                const dx = point.x - gameState.localPlayer.position.x;
+                const dz = point.z - gameState.localPlayer.position.z;
+                gameState.localPlayer.rotation = Math.atan2(dx, dz);
+                gameState.localPlayer.gun.position.x = 0.9 * Math.sin(gameState.localPlayer.rotation);
+                gameState.localPlayer.gun.position.z = 0.9 * Math.cos(gameState.localPlayer.rotation);
+                updateLocalPlayerInDb();
+            }
+        }
+
+        function showOverlay(title, subtitle, showActions = false) {
+            overlayTitleEl.textContent = title || '';
+            overlaySubtitleEl.textContent = subtitle || '';
+            overlayActionsEl.style.display = showActions ? 'block' : 'none';
+            overlayEl.style.display = 'flex';
+        }
+        function hideOverlay() {
+            overlayEl.style.display = 'none';
+        }
+
+        // =============================================
+        // INPUT
+        // =============================================
+        const keys = { w: false, a: false, s: false, d: false };
+        document.addEventListener('keydown', (e) => {
+            const k = e?.key?.toLowerCase?.();
+            if (k && keys.hasOwnProperty(k)) keys[k] = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            const k = e?.key?.toLowerCase?.();
+            if (k && keys.hasOwnProperty(k)) keys[k] = false;
         });
 
-        self.addEventListener('fetch', event => {
-          event.respondWith(
-            caches.match(event.request)
-              .then(response => response || fetch(event.request))
-          );
-        });
-      `;
-      
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl);
-    }
-  </script>
-  
-  <!-- Web App Manifest (would be a separate file in production) -->
-  <script>
-    const manifest = {
-      "name": "Money Stairs",
-      "short_name": "MoneyStairs",
-      "description": "Track your savings progress with motivational steps",
-      "start_url": "/",
-      "display": "standalone",
-      "background_color": "#f8b500",
-      "theme_color": "#f8b500",
-      "icons": [
-        {
-          "src": "icons/icon-72x72.png",
-          "sizes": "72x72",
-          "type": "image/png"
-        },
-        {
-          "src": "icons/icon-96x96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        },
-        {
-          "src": "icons/icon-128x128.png",
-          "sizes": "128x128",
-          "type": "image/png"
-        },
-        {
-          "src": "icons/icon-144x144.png",
-          "sizes": "144x144",
-          "type": "image/png"
-        },
-        {
-          "src": "icons/icon-152x152.png",
-          "sizes": "152x152",
-          "type": "image/png"
-        },
-        {
-          "src": "icons/icon-192x192.png",
-          "sizes": "192x192",
-          "type": "image/png"
-        },
-        {
-          "src": "icons/icon-384x384.png",
-          "sizes": "384x384",
-          "type": "image/png"
-        },
-        {
-          "src": "icons/icon-512x512.png",
-          "sizes": "512x512",
-          "type": "image/png"
+        // =============================================
+        // MATCHMAKING (Rooms + per-match isolation)
+        // =============================================
+        async function login(username) {
+            const name = (username || '').trim();
+            if (!name) {
+                alert('Please enter a username');
+                return;
+            }
+            gameState.username = name;
+            gameState.playerId = `p-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+            matchStatusEl.textContent = `Logged in as ${name}`;
+            findMatchBtn.disabled = false;
         }
-      ]
-    };
-    
-    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-    const manifestUrl = URL.createObjectURL(manifestBlob);
-    document.querySelector('link[rel="manifest"]').href = manifestUrl;
-  </script>
+
+        function setQueueUI(inQueue) {
+            gameState.inQueue = inQueue;
+            findMatchBtn.disabled = !gameState.username || inQueue;
+            leaveQueueBtn.disabled = !inQueue;
+            matchStatusEl.textContent = inQueue ? 'Matching… waiting for opponent' : `Logged in as ${gameState.username}`;
+        }
+
+        function createRoom() {
+            const roomsRef = database.ref('rooms');
+            const newRoomRef = roomsRef.push();
+            const roomId = newRoomRef.key;
+            newRoomRef.set({
+                status: 'waiting',
+                createdAt: Date.now(),
+                playerA: { id: gameState.playerId, username: gameState.username }
+            });
+            // If we disconnect while waiting, cleanup the room
+            newRoomRef.onDisconnect().remove();
+            gameState.matchId = roomId;
+            gameState.isHost = true;
+            listenRoom(roomId);
+            setQueueUI(true);
+        }
+
+        function tryJoinFirstWaitingRoom() {
+            const roomsRef = database.ref('rooms');
+            roomsRef.orderByChild('status').equalTo('waiting').limitToFirst(1).once('value', (snap) => {
+                if (!snap.exists()) {
+                    createRoom();
+                    return;
+                }
+                const child = Object.entries(snap.val())[0];
+                const roomId = child[0];
+                const playerBRef = database.ref(`rooms/${roomId}/playerB`);
+                playerBRef.transaction((current) => {
+                    if (current) return; // already taken
+                    return { id: gameState.playerId, username: gameState.username };
+                }, (error, committed, snapshot) => {
+                    if (error || !committed) {
+                        // Could not join, create a room instead
+                        createRoom();
+                        return;
+                    }
+                    // Joined successfully, mark in_progress
+                    database.ref(`rooms/${roomId}/status`).set('in_progress');
+                    gameState.matchId = roomId;
+                    gameState.isHost = false;
+                    listenRoom(roomId);
+                    setQueueUI(true);
+                });
+            });
+        }
+
+        function listenRoom(roomId) {
+            const roomRef = database.ref(`rooms/${roomId}`);
+            const unsub = roomRef.on('value', (snap) => {
+                const room = snap.val();
+                if (!room) return; // possibly removed
+                if (room.status === 'in_progress') {
+                    // Ensure both players known
+                    const a = room.playerA; const b = room.playerB;
+                    if (a && b) {
+                        startMatchForRoom(roomId, a, b);
+                        roomRef.off();
+                    }
+                }
+            });
+            gameState.cleanupFns.push(() => roomRef.off());
+        }
+
+        function startMatchForRoom(roomId, playerA, playerB) {
+            // Prepare per-match paths
+            const matchRef = database.ref(`matches/${roomId}`);
+
+            // Host sets deterministic state: spawns, medkits, countdown start time
+            if (gameState.isHost) {
+                const startAt = Date.now() + COUNTDOWN_MS;
+                const spawns = [
+                    { x: -18, z: -18 },
+                    { x: 18, z: 18 }
+                ];
+                const medkits = {};
+                for (let i = 0; i < MEDKIT_COUNT; i++) {
+                    const id = `m-${i}`;
+                    const x = (Math.random() * (WORLD_BOUNDS - 10)) * (Math.random() > 0.5 ? 1 : -1);
+                    const z = (Math.random() * (WORLD_BOUNDS - 10)) * (Math.random() > 0.5 ? 1 : -1);
+                    medkits[id] = { x, z };
+                }
+                matchRef.set({
+                    state: {
+                        startAt,
+                        matchStarted: false,
+                        hostId: gameState.playerId,
+                        winnerId: null
+                    },
+                    medkits,
+                    players: {},
+                    bullets: {}
+                });
+            }
+
+            // Add self to match players
+            const meSpawnIndex = gameState.isHost ? 0 : 1;
+            const myInitialPos = gameState.isHost ? { x: -18, z: -18 } : { x: 18, z: 18 };
+            database.ref(`matches/${roomId}/players/${gameState.playerId}`).onDisconnect().remove();
+            database.ref(`matches/${roomId}/players/${gameState.playerId}`).set({
+                username: gameState.username,
+                x: myInitialPos.x,
+                z: myInitialPos.z,
+                rotation: 0,
+                health: PLAYER_HEALTH,
+                isDead: false,
+                lastUpdate: Date.now()
+            });
+
+            // Listen to match
+            wireMatchListeners(roomId);
+
+            // Host flips matchStarted true exactly at startAt
+            if (gameState.isHost) {
+                const stateRef = database.ref(`matches/${roomId}/state`);
+                stateRef.once('value', (s) => {
+                    const st = s.val();
+                    if (!st) return;
+                    const delay = Math.max(0, st.startAt - Date.now());
+                    setTimeout(() => {
+                        stateRef.update({ matchStarted: true });
+                    }, delay);
+                });
+            }
+
+            // UI
+            showOverlay('Match Found', 'Get ready…');
+        }
+
+        function wireMatchListeners(matchId) {
+            gameState.matchId = matchId;
+
+            // Players
+            const playersRef = database.ref(`matches/${matchId}/players`);
+            playersRef.on('value', (snap) => {
+                const players = snap.val() || {};
+                // Add/update remote players (excluding local, which we keep as gameState.localPlayer)
+                Object.keys(players).forEach(pid => {
+                    const pdata = players[pid];
+                    if (pid === gameState.playerId) {
+                        if (!gameState.localPlayer) {
+                            gameState.localPlayer = new Player(pid, gameState.username, true, pdata.x, pdata.z, pdata.health);
+                        }
+                        return;
+                    }
+                    if (!gameState.players[pid]) {
+                        gameState.players[pid] = new Player(pid, pdata.username, false, pdata.x, pdata.z, pdata.health);
+                    } else {
+                        const p = gameState.players[pid];
+                        p.position.set(pdata.x, 0, pdata.z);
+                        p.rotation = pdata.rotation || 0;
+                        p.health = pdata.health;
+                        p.isDead = pdata.isDead;
+                        if (p.isDead) p.body.material.color.setHex(0x777777);
+                        p.mesh.position.copy(p.position);
+                        p.mesh.rotation.y = p.rotation;
+                    }
+                });
+                // Remove players not present
+                Object.keys(gameState.players).forEach(pid => {
+                    if (!players[pid]) {
+                        gameState.players[pid].destroy();
+                        delete gameState.players[pid];
+                    }
+                });
+                updateEnemyHealthUI();
+            });
+            gameState.cleanupFns.push(() => playersRef.off());
+
+            // Medkits
+            const medkitsRef = database.ref(`matches/${matchId}/medkits`);
+            medkitsRef.on('value', (snap) => {
+                const mk = snap.val() || {};
+                // Remove missing ones
+                Object.keys(gameState.medkits).forEach(id => {
+                    if (!mk[id]) {
+                        scene.remove(gameState.medkits[id].mesh);
+                        delete gameState.medkits[id];
+                    }
+                });
+                // Add/update
+                Object.entries(mk).forEach(([id, data]) => {
+                    if (!gameState.medkits[id]) {
+                        const geom = new THREE.BoxGeometry(1, 0.5, 1);
+                        const mat = new THREE.MeshStandardMaterial({ color: 0xff4444 });
+                        const mesh = new THREE.Mesh(geom, mat);
+                        mesh.position.set(data.x, 0.25, data.z);
+                        scene.add(mesh);
+                        gameState.medkits[id] = { id, x: data.x, z: data.z, mesh };
+                    } else {
+                        const m = gameState.medkits[id];
+                        m.x = data.x; m.z = data.z;
+                        m.mesh.position.set(m.x, 0.25, m.z);
+                    }
+                });
+            });
+            gameState.cleanupFns.push(() => medkitsRef.off());
+
+            // Bullets
+            const bulletsRef = database.ref(`matches/${matchId}/bullets`);
+            bulletsRef.on('child_added', (snap) => {
+                const b = snap.val();
+                if (!gameState.bullets[b.id]) {
+                    gameState.bullets[b.id] = new Bullet(b.id, b.x, b.y, b.z, b.dirX, b.dirZ, b.owner);
+                }
+            });
+            bulletsRef.on('child_removed', (snap) => {
+                const id = snap.key;
+                const bullet = gameState.bullets[id];
+                if (bullet) {
+                    bullet.destroy();
+                    delete gameState.bullets[id];
+                }
+            });
+            gameState.cleanupFns.push(() => bulletsRef.off());
+
+            // State
+            const stateRef = database.ref(`matches/${matchId}/state`);
+            stateRef.on('value', (snap) => {
+                const st = snap.val() || {};
+                if (st.startAt && !gameState.matchStarted) {
+                    const msLeft = Math.max(0, st.startAt - Date.now());
+                    if (msLeft > 0) {
+                        showOverlay('Get Ready', `Starts in ${(msLeft / 1000).toFixed(1)}s`);
+                        setTimeout(() => hideOverlay(), msLeft);
+                    }
+                }
+                if (st.matchStarted && !gameState.matchStarted) {
+                    gameState.matchStarted = true;
+                    lobbyEl.style.display = 'none';
+                    hudEl.style.display = 'block';
+                    crosshairEl.style.display = 'block';
+                    hideOverlay();
+                }
+                if (st.winnerId) {
+                    gameState.matchStarted = false;
+                    const youWon = st.winnerId === gameState.playerId;
+                    showOverlay(youWon ? 'Victory!' : 'Defeat', 'Match finished', true);
+                }
+            });
+            gameState.cleanupFns.push(() => stateRef.off());
+        }
+
+        function endMatchAndCleanup() {
+            // Remove listeners and in-scene objects
+            gameState.cleanupFns.forEach(fn => { try { fn(); } catch (e) {} });
+            gameState.cleanupFns = [];
+
+            Object.values(gameState.players).forEach(p => p.destroy());
+            gameState.players = {};
+
+            if (gameState.localPlayer) {
+                gameState.localPlayer.destroy();
+                gameState.localPlayer = null;
+            }
+
+            Object.values(gameState.medkits).forEach(m => scene.remove(m.mesh));
+            gameState.medkits = {};
+
+            Object.values(gameState.bullets).forEach(b => b.destroy());
+            gameState.bullets = {};
+
+            gameState.matchId = null;
+            gameState.matchStarted = false;
+            gameState.isHost = false;
+            gameState.inQueue = false;
+
+            hudEl.style.display = 'none';
+            crosshairEl.style.display = 'none';
+            lobbyEl.style.display = 'flex';
+            overlayActionsEl.style.display = 'none';
+        }
+
+        function declareWinnerIfNeeded() {
+            if (!gameState.matchId) return;
+            const aliveEnemies = Object.values(gameState.players).filter(p => !p.isDead);
+            const meDead = !gameState.localPlayer || gameState.localPlayer.isDead;
+            if ((meDead && aliveEnemies.length > 0) || (!meDead && aliveEnemies.length === 0)) {
+                // Host writes winner
+                if (gameState.isHost) {
+                    const winnerId = meDead ? (aliveEnemies[0]?.id || null) : gameState.playerId;
+                    database.ref(`matches/${gameState.matchId}/state`).update({ winnerId });
+                }
+            }
+        }
+
+        // =============================================
+        // GAME LOOP
+        // =============================================
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = Date.now();
+            const dt = Math.min(0.05, (now - gameState.lastUpdateTime) / 1000);
+            gameState.lastUpdateTime = now;
+
+            // Input for local player
+            if (gameState.localPlayer && gameState.matchStarted && !gameState.localPlayer.isDead) {
+                if (keys.w) gameState.localPlayer.velocity.z -= PLAYER_SPEED;
+                if (keys.s) gameState.localPlayer.velocity.z += PLAYER_SPEED;
+                if (keys.a) gameState.localPlayer.velocity.x -= PLAYER_SPEED;
+                if (keys.d) gameState.localPlayer.velocity.x += PLAYER_SPEED;
+                if (gameState.localPlayer.velocity.x !== 0 && gameState.localPlayer.velocity.z !== 0) {
+                    gameState.localPlayer.velocity.normalize().multiplyScalar(PLAYER_SPEED);
+                }
+                gameState.localPlayer.update(dt);
+                updateLocalPlayerInDb();
+            }
+
+            // Update remotes
+            Object.values(gameState.players).forEach(p => {
+                if (p.id !== gameState.playerId) p.update(dt);
+            });
+
+            // Camera track
+            if (gameState.localPlayer) {
+                camera.position.x = gameState.localPlayer.position.x;
+                camera.position.z = gameState.localPlayer.position.z + 10;
+            }
+
+            // Bullets update
+            const removeIds = [];
+            Object.entries(gameState.bullets).forEach(([id, b]) => {
+                if (!b.update(dt)) removeIds.push(id);
+                if (Date.now() - b.spawnTime > BULLET_LIFETIME) removeIds.push(id);
+            });
+            removeIds.forEach(id => {
+                if (gameState.bullets[id]) {
+                    gameState.bullets[id].destroy();
+                    delete gameState.bullets[id];
+                }
+            });
+
+            // Winner check
+            if (gameState.matchStarted) declareWinnerIfNeeded();
+
+            renderer.render(scene, camera);
+        }
+
+        // =============================================
+        // UI EVENTS
+        // =============================================
+        loginBtn.addEventListener('click', () => login(usernameInput.value));
+        findMatchBtn.addEventListener('click', () => {
+            if (!gameState.username) return;
+            setQueueUI(true);
+            tryJoinFirstWaitingRoom();
+            showOverlay('Matchmaking…', 'Finding opponent');
+        });
+        leaveQueueBtn.addEventListener('click', () => {
+            if (!gameState.inQueue) return;
+            // If we created a waiting room, remove it
+            if (gameState.isHost && gameState.matchId) {
+                database.ref(`rooms/${gameState.matchId}`).remove();
+            }
+            endMatchAndCleanup();
+            setQueueUI(false);
+            hideOverlay();
+        });
+        playAgainBtn.addEventListener('click', () => {
+            hideOverlay();
+            endMatchAndCleanup();
+            setQueueUI(false);
+            // Auto queue again
+            if (gameState.username) {
+                lobbyEl.style.display = 'flex';
+                findMatchBtn.click();
+            }
+        });
+        backToLobbyBtn.addEventListener('click', () => {
+            hideOverlay();
+            endMatchAndCleanup();
+            setQueueUI(false);
+        });
+
+        // =============================================
+        // WINDOW/BOOT
+        // =============================================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function boot() {
+            setupWorld();
+            animate();
+        }
+        boot();
+    </script>
 </body>
 </html>
