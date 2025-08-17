@@ -1,0 +1,447 @@
+openapi: 3.0.3
+info:
+  title: eSports Tournament Platform API (MVP)
+  version: 0.1.0
+  description: |
+    টুর্নামেন্ট প্ল্যাটফর্মের MVP API। Auth, Tournament, Registration, Match/Result, Wallet/Payment, Admin, Notification, Chat কভার করে।
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: http://localhost:4000
+    description: Local Dev
+security:
+  - bearerAuth: []
+paths:
+  /auth/register:
+    post:
+      summary: Register user (email/phone/social)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/RegisterByEmailRequest'
+                - $ref: '#/components/schemas/RegisterByPhoneRequest'
+      responses:
+        '201': { description: Created }
+  /auth/login:
+    post:
+      summary: Login with email/phone/password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200': { description: OK }
+  /me:
+    get:
+      summary: Get current user profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserProfile' }
+    patch:
+      summary: Update profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateProfileRequest' }
+      responses:
+        '200': { description: OK }
+  /me/wallet:
+    get:
+      summary: Get wallet
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Wallet' } } } }
+  /me/wallet/deposit:
+    post:
+      summary: Create deposit checkout (PayPal)
+      responses:
+        '200': { description: OK }
+  /me/wallet/withdraw:
+    post:
+      summary: Request withdrawal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/WithdrawalRequest' }
+      responses:
+        '202': { description: Accepted }
+  /me/transactions:
+    get:
+      summary: List my transactions
+      responses:
+        '200': { description: OK }
+
+  /tournaments:
+    get:
+      summary: List tournaments (public + mine)
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create tournament (Organizer)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTournamentRequest' }
+      responses:
+        '201': { description: Created }
+  /tournaments/{id}:
+    get:
+      summary: Get tournament details
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+    patch:
+      summary: Update tournament (Organizer)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateTournamentRequest' }
+      responses:
+        '200': { description: OK }
+  /tournaments/{id}/submit-for-approval:
+    post:
+      summary: Submit tournament for admin approval
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '202': { description: Submitted }
+  /tournaments/{id}/register:
+    post:
+      summary: Register for a tournament (Player/Squad)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterTournamentRequest' }
+      responses:
+        '201': { description: Created }
+  /tournaments/{id}/verify-registration:
+    post:
+      summary: Verify registration with OTP or Game ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerifyRegistrationRequest' }
+      responses:
+        '200': { description: OK }
+  /tournaments/{id}/participants:
+    get:
+      summary: List participants (players/squads)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+
+  /tournaments/{id}/matches/generate:
+    post:
+      summary: Generate matches (Organizer)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '201': { description: Created }
+  /tournaments/{id}/matches:
+    get:
+      summary: List matches in a tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+  /matches/{id}/results:
+    post:
+      summary: Submit match result/proof
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubmitResultRequest' }
+      responses:
+        '201': { description: Created }
+    get:
+      summary: Get match results
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+
+  /leaderboard/{tournamentId}:
+    get:
+      summary: Leaderboard for a tournament
+      parameters:
+        - in: path
+          name: tournamentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+
+  /notifications/subscribe:
+    post:
+      summary: Subscribe to web push notifications
+      responses:
+        '201': { description: Created }
+  /notifications:
+    get:
+      summary: List my notifications
+      responses:
+        '200': { description: OK }
+
+  /tournaments/{id}/messages:
+    get:
+      summary: List messages in a tournament room
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Send a message in a tournament room
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SendMessageRequest' }
+      responses:
+        '201': { description: Created }
+
+  /admin/tournaments/pending:
+    get:
+      summary: List tournaments awaiting approval
+      responses:
+        '200': { description: OK }
+  /admin/tournaments/{id}/approve:
+    post:
+      summary: Approve a tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+  /admin/tournaments/{id}/reject:
+    post:
+      summary: Reject a tournament
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: false
+      responses:
+        '200': { description: OK }
+  /admin/users:
+    get:
+      summary: List users with roles/status
+      responses:
+        '200': { description: OK }
+  /admin/users/{id}/ban:
+    post:
+      summary: Ban a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+  /admin/users/{id}/unban:
+    post:
+      summary: Unban a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: OK }
+
+  /webhooks/paypal:
+    post:
+      summary: PayPal webhook receiver
+      responses:
+        '200': { description: OK }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        display_name: { type: string }
+        avatar_url: { type: string }
+        roles:
+          type: array
+          items: { type: string, enum: [player, organizer, admin, super_admin] }
+    Wallet:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        balance: { type: number }
+        currency: { type: string }
+    Transaction:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, enum: [deposit, withdrawal, entry_fee, prize, refund, adjustment] }
+        status: { type: string, enum: [pending, processing, succeeded, failed, canceled] }
+        amount: { type: number }
+        currency: { type: string }
+        created_at: { type: string, format: date-time }
+    Tournament:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        game_name: { type: string }
+        type: { type: string, enum: ['1v1','2v2','squad','custom'] }
+        entry_fee: { type: number }
+        currency: { type: string }
+        status:
+          type: string
+          enum: [draft,pending_approval,approved,rejected,registration_open,registration_closed,live,completed,canceled]
+    RegisterByEmailRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+        display_name: { type: string }
+    RegisterByPhoneRequest:
+      type: object
+      required: [phone]
+      properties:
+        phone: { type: string }
+        otp: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+    UpdateProfileRequest:
+      type: object
+      properties:
+        display_name: { type: string }
+        avatar_url: { type: string }
+    CreateTournamentRequest:
+      type: object
+      required: [title, game_name, type, entry_fee, max_participants]
+      properties:
+        title: { type: string }
+        game_name: { type: string }
+        type: { type: string, enum: ['1v1','2v2','squad','custom'] }
+        map: { type: string }
+        match_time: { type: string, format: date-time }
+        entry_fee: { type: number }
+        currency: { type: string }
+        max_participants: { type: integer }
+        points_config: { type: object }
+        rules: { type: string }
+    UpdateTournamentRequest:
+      type: object
+      properties:
+        title: { type: string }
+        map: { type: string }
+        match_time: { type: string, format: date-time }
+        entry_fee: { type: number }
+        rules: { type: string }
+    RegisterTournamentRequest:
+      type: object
+      properties:
+        type: { type: string, enum: [player, squad] }
+        player_id: { type: string, format: uuid }
+        squad_id: { type: string, format: uuid }
+        game_uid: { type: string }
+    VerifyRegistrationRequest:
+      type: object
+      properties:
+        method: { type: string, enum: [otp, game_id] }
+        otp: { type: string }
+        game_uid: { type: string }
+    SubmitResultRequest:
+      type: object
+      required: [kills, points]
+      properties:
+        player_id: { type: string, format: uuid }
+        squad_id: { type: string, format: uuid }
+        kills: { type: integer }
+        points: { type: integer }
+        rank: { type: integer }
+        proof_url: { type: string }
+    WithdrawalRequest:
+      type: object
+      required: [amount, method]
+      properties:
+        amount: { type: number }
+        method: { type: string, enum: [paypal, bank, mobile_wallet, crypto] }
+        account_ref: { type: string }
+    SendMessageRequest:
+      type: object
+      required: [body]
+      properties:
+        body: { type: string }
