@@ -1,0 +1,1 @@
+"""App package for the safe practice GUI panel."""

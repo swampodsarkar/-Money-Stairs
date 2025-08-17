@@ -1,0 +1,1 @@
+"""UI package containing the application window and views."""
