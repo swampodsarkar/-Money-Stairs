@@ -1,0 +1,1 @@
+"""Core logic for configuration, models, and simulation."""

@@ -1,0 +1,1 @@
+"""UI view components for sidebar and playfield."""
